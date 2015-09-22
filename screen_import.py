@@ -33,15 +33,22 @@ if not ns.force:
 if ns.screen[-1] == "/":
     ns.screen = ns.screen[0:-1]
 
-screen = basename(ns.screen)
-study = basename(dirname(ns.screen))
+if "plates" in ns.screen:
+    base, plate = ns.screen.split("/plates/")
+    plates = [ns.screen]
+else:
+    base = ns.screen
+    plates = join(ns.screen, "plates", "*")
+
+screen = basename(base)
+study = basename(dirname(base))
 
 print "Study: ", study
 print "Screen: ", screen
+print "Plate count:", len(plates)
 assert exists(ns.screen)
+import sys; sys.exit(0)
 
-
-plates = join(ns.screen, "plates", "*")
 for plate in glob(plates):
     name = basename(plate)
     with open(plate, "r") as f:
