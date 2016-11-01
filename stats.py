@@ -26,13 +26,14 @@ PDI_QUERY = (
     "       0, count(distinct i.id),"
     "       sum(cast(pix.sizeZ as long) * pix.sizeT * pix.sizeC), "
     "       sum(cast(pix.sizeZ as long) * pix.sizeT * pix.sizeC * "
-    "           pix.sizeX * pix.sizeY * 2) "
+    "           pix.sizeX * pix.sizeY * pt.bitSize / 8) "
     "from Project p "
     "left outer join p.datasetLinks pdl "
     "left outer join pdl.child d "
     "left outer join d.imageLinks as dil "
     "left outer join dil.child as i "
     "left outer join i.pixels as pix "
+    "left outer join pix.pixelsType as pt "
     "where p.name = :container "
     "group by p.id")
 
@@ -41,7 +42,7 @@ SPW_QUERY = (
     "       count(distinct w.id), count(distinct i.id),"
     "       sum(cast(pix.sizeZ as long) * pix.sizeT * pix.sizeC), "
     "       sum(cast(pix.sizeZ as long) * pix.sizeT * pix.sizeC * "
-    "           pix.sizeX * pix.sizeY * 2) "
+    "           pix.sizeX * pix.sizeY * pt.bitSize / 8) "
     "from Screen s "
     "left outer join s.plateLinks spl "
     "left outer join spl.child as p "
@@ -49,6 +50,7 @@ SPW_QUERY = (
     "left outer join w.wellSamples as ws "
     "left outer join ws.image as i "
     "left outer join i.pixels as pix "
+    "left outer join pix.pixelsType as pt "
     "where s.name = :container "
     "group by s.id")
 
@@ -63,7 +65,7 @@ def studies():
             study = study[0:-1]
 
         target = "Plate"
-        containers = glob(join(study, "screen[ABC]"))
+        containers = glob(join(study, "screen[A-Z]*"))
         if containers:
             assert not glob(join(study, "experiment*"))
         else:
