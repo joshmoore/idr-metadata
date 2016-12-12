@@ -253,7 +253,7 @@ class StudyFiles(object):
 
         # 6. which columns appear in both the library and processed files?
 
-        columnsToLooseFromProcessedFile = []
+        columnsToLooseFromProcessedFile = set()
         numberOfColumnsUniqueToProcessedFile = 0
         blankColumnsIfNoProcessedData = ""
 
@@ -265,7 +265,9 @@ class StudyFiles(object):
             #       have to do quotemeta to match if the string has square
             #       brackets  e.g. Experimental Condition [genotype]
             if col in libraryHeaderRow:
-                columnsToLooseFromProcessedFile.append(col)
+                columnsToLooseFromProcessedFile.add(index)
+        LOG.debug("columnsToLooseFromProcessedFile: %s" %
+                  columnsToLooseFromProcessedFile)
 
         numberOfColumnsUniqueToProcessedFile = len(processedHeaderRow) - \
             len(columnsToLooseFromProcessedFile)
@@ -296,13 +298,10 @@ class StudyFiles(object):
             # have to quotemeta this as column to match
             # on might have brackets in it
             # e.g. Experimental Condition [cell line]
-            if column == columnTitleToCombineOn:  # TODO
-                LOG.debug("column to match on is %s" % column)
+            if column == columnTitleToCombineOn:
+                LOG.debug("column to match on is %s (%s)" % (column, p))
                 indexOfProcessedFileColumnForMatching = p
-            break
-
-            LOG.debug("index for column to match on is %s" %
-                      indexOfProcessedFileColumnForMatching)
+                break
 
         # 9. remove the columns from the processed file that are already in
         #    the library file as don't need them twice in the final file. To
