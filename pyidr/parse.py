@@ -115,6 +115,7 @@ Module documentation
 # A. get inputs from user and open the files
 ######################################################################
 
+from re import match
 from argparse import ArgumentParser
 # TODO: move to using logging
 
@@ -213,7 +214,8 @@ class StudyFiles(object):
 
         indexOfLibraryFileColumnForMatching = None
 
-        libraryHeaderRow = self.library_lines[0].split("\t")
+        libraryHeaderRow = [x.strip()
+                            for x in self.library_lines[0].split("\t")]
 
         for n, column in enumerate(libraryHeaderRow):
             # TODO: clarify regex
@@ -365,7 +367,7 @@ class StudyFiles(object):
                 # when we get a phenotype column ...
                 val = Identifier_otherColumnsWithOntology[
                     columnTitleToCombineOn][a]
-                if val.startswith("Phenotype "):  # TODO: m/^Phenotype\s?\d*$/
+                if match("^Phenotype\s?\d*", val):
 
                     mapping = list()
                     ontologiesUsed = list()
