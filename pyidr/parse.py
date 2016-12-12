@@ -206,7 +206,7 @@ class StudyFiles(object):
 #    match up with the processed file
 ######################################################################
 
-    def process_library(self, columnTitleToCombineOn, unknown):
+    def process_library(self, columnTitleToCombineOn, phenotype_ontologyArray):
 
         # 5. which column in library file has identifier to match column in
         # processed file
@@ -221,8 +221,8 @@ class StudyFiles(object):
                 indexOfLibraryFileColumnForMatching = n
                 break
 
-        # print "index of library file column for matching is
-        # $indexOfLibraryFileColumnForMatching\n";
+        print "index of library file column for matching is ", \
+            indexOfLibraryFileColumnForMatching
 
         # remove any new line characters
         # TODO (perhaps already done)
@@ -344,71 +344,76 @@ class StudyFiles(object):
         # if there are any phenotypes then add the ontology to the new header
         # row otherwise it will just stay the same as it is
 
-    """
+        # if there are any phenotypes mentioned in the study file for the screen
+        if phenotype_ontologyArray:
 
-    # if there are any phenotypes mentioned in the study file for the screen
-    if  (%phenotype_ontologyArray){
+            # find which are the phenotype columns from the processed file
+            # when get a phenotype column, find out what its in it, then get
+            # mapping store which ontology with the phenotype to add link in
+            # header then add the header rows then go through and add the
+            # mappings
 
-        # find which are the phenotype columns from the processed file
-        # when get a phenotype column, find out what its in it, then get mapping
-        # store which ontology with the phenotype to add link in header
-        # then add the header rows
-        # then go through and add the mappings
+            # going through column headings of original array
+            for a in range(Identifier_otherColumns[columnTitleToCombineOn]):
+                # Reminder: %Identifier_otherColumns has each identifier e.g.
+                # Plate_Well or Gene Identfier that is used to combined the
+                # library and processed data files as the key, and all the
+                # processed data columns that go with that identifier as the
+                # values So here we are going through the column headings row
+                # because the key is what ever the column title to combine on is
 
-        my $b = 0;
-        my $numberOntologyColumnsAdded = 0;
+                # when we get a phenotype column ...
+                val = Identifier_otherColumnsWithOntology[
+                    columnTitleToCombineOn][a]
+                if val.startswith("Phenotype "):  # TODO: m/^Phenotype\s?\d*$/
 
-        for my $a (0 .. $#{$Identifier_otherColumns{$columnTitleToCombineOn}}) { # going through column headings of original array
-            # Reminder: %Identifier_otherColumns has each identifier e.g. Plate_Well or Gene Identfier that is used to combined the
-            # library and processed data files as the key, and all the processed data columns that go with that identifier as the values
-            # So here we are going through the column headings row because the key is what ever the column title to combine on is
+                    mapping = list()
+                    ontologiesUsed = list()
 
-            if( ${$Identifier_otherColumns{$columnTitleToCombineOn}}[$a] =~ m/^Phenotype\s?\d*$/){  # when we get a phenotype column ...
+                    # FIRST TIME ROUND - JUST FIND OUT FOR THIS PHENOTYPE IF
+                    # THERE IS A MAPPING, AND IF SO IS IT ONE OR TWO TERMS
+                    # AND WHAT ONTOLOGIES ARE THEY FROM
 
-                my @mapping = ();
-                my $numberOfMappings = 0;
-                my @ontologiesUsed = ();
+                    for identifier in Identifier_otherColumns.keys():
+                        # start going through all the rows in that phenotype
+                        # column to find one with a value
 
-                 # FIRST TIME ROUND - JUST FIND OUT FOR THIS PHENOTYPE IF THERE IS A MAPPING, AND IF SO IS IT ONE OR TWO TERMS
-                 # AND WHAT ONTOLOGIES ARE THEY FROM
+                        if (Identifier_otherColumns[identifier][a]
+                                and Identifier_otherColumns !=
+                                columnTitleToCombineOn):
 
-                foreach my $identifier (keys %Identifier_otherColumns){ # start going through all the rows in that phenotype column to find one with a value
+                            # if the value matches a word character but is not
+                            # the column heading; see if this phenotype has an
+                            # ontology mapping
 
-                   if (($Identifier_otherColumns{$identifier}[$a] =~ m/\w+/) && ($identifier ne $columnTitleToCombineOn))  { # if the value matches a word character but is not the column heading
-                     # see if this phenotype has an ontology mapping
+                            # check the phenotype exists in the study file.
+                            # Have to use quotemeta in case there is a bracket
+                            # or other character needing escaping in the
+                            # phenotype value (TODO)
+                            if Identifier_otherColumns[identifier][a] in \
+                                    phenotype_ontologyArray.keys():
 
-                    if (grep (/\Q$Identifier_otherColumns{$identifier}[$a]\E/, keys %phenotype_ontologyArray)){ # check the phenotype exists in the study file. Have to use quotemeta in case there is a bracket or other character needing escaping in the phenotype value
+                                # this info comes from the study file
+                                mapping = phenotype_ontologyArray[
+                                    Identifier_otherColumns[identifier[a]]]
 
-                 @mapping = @{$phenotype_ontologyArray{$Identifier_otherColumns{$identifier}[$a]}};      # this info comes from the study file
+                                if len(mapping) == 3:
+                                    ontologiesUsed.append(mapping[0])
+                                    break
+                                elif len(mapping) == 6:
+                                    ontologiesUsed.append(mapping[0])
+                                    ontologiesUsed.append(mapping[3])
+                                    break
+                            else:
+                                raise Exception((
+                                    "ERROR: Phenotype '%s' does not exist in "
+                                    "the study file") %
+                                    Identifier_otherColumns[identifier[a]]
+                                )
 
-                if(scalar(@mapping) == 3){
-                 $numberOfMappings = 1;
-                 push @ontologiesUsed, $mapping[0];
-                         last;
-                }elsif(scalar(@mapping) == 6){
-                 $numberOfMappings = 2;
-                 push @ontologiesUsed, $mapping[0], $mapping[3];
-                         last;
-            }else{
-                         $numberOfMappings = 0;
-                    last;
-               }
+        # get the URIs associated with the ontologies used (REMOVED)
 
-           }else{
-               die "ERROR: Phenotype '$Identifier_otherColumns{$identifier}[$a]' does not exist in the study file: $!";
-           }
-       } # if there is a value and its not the column heading
-     } # foreach identifier
-
-     # get the URIs associated with the ontologies used
-
-#     my %ontology_URI;
-#     foreach my $ontology (@ontologiesUsed){
-#       my $URI = getOntologyURI($ontology, $study);
-#       $ontology_URI{$ontology} = $URI;
-#     }
-
-
+        """
          # SECOND TIME ROUND - GO THROUGH EACH IDENTIFIER, IF THERE IS A PHENOTYPE ADD THE MAPPINGS, IF NOT THEN JUST ADD THE SAME NUMBER OF TABS
      # IF THERE IS A PHENOTYPE BUT THIS PHENOTYPE HAS NO ONTOLOGY MAPPING THEN SKIP TO THE NEXT COLUMN
 
@@ -555,17 +560,12 @@ foreach my $libRow (@libraryFile){
 close (OUT);
 """
 
-
-
-############################################################################################
-
-
 ######################################################################
 # Helpers
 ######################################################################
 
     def _parseScreenSections(self, screenNumber):
-        if not "Screen Number" in self.study_contents:
+        if "Screen Number" not in self.study_contents:
             raise Exception(("Phrase 'Screen Number' does not exist in the "
                              "study file so can't get the screen information: "
                              "%s") % self.study)
@@ -583,8 +583,6 @@ close (OUT);
             raise Exception((
                 "Screen Number must be the same as one of those specified in "
                 "the study file: %s > %s") % (screenNumber, found))
-
-
 
     def _getColumnToCombineOn(self, section):
         # Find out which column the library and processed files should be
@@ -613,7 +611,7 @@ close (OUT);
         screenPhenotype_ontologyArray = {}
         # keep it easy to understand using variables
         phenotypes = []
-        termSource1= []
+        termSource1 = []
         termNames1 = []
         termAccs1 = []
         termSource2 = []
@@ -645,9 +643,10 @@ close (OUT);
 
         # print "Getting the phenotypes from the library file: \n";
         # put it all into the hash of arrays
-        maxNumberOfOntTerms = 1  # use this to see if we have any phenotypes
-                                 # that map to 2 ontology terms
-                                 # like 'abnormal' + 'microtubule structure'
+        # maxNumberOfOntTerms = 1 (unused)
+        # use this to see if we have any phenotypes
+        # that map to 2 ontology terms
+        # like 'abnormal' + 'microtubule structure'
         # go through each column in each row
         # first column is 'Phenotype Name' so don't need that
         for t in range(1, len(phenotypes)):
@@ -670,29 +669,6 @@ close (OUT);
 
         return screenPhenotype_ontologyArray
 
-"""
-    def havePhenotypes(self):
-        # subroutine to determine whether there are any phenotype values for the screen in the study file
-
-        my $screenRef = shift;
-        my @screenRows = @$screenRef;
-        my $have_phenotypes = "false";
-
-        # find the row that is the Phenotype Name row and see if there are any values
-        for (my $n=0; $n<@screenRows; $n++){
-                if ($screenRows[$n] =~ m/Phenotype Name/){
-                $screenRows[$n] =~ s/Phenotype Name//;
-                if($screenRows[$n] =~ /\w/){ # if matches a letter character then we have phenotype values
-                $have_phenotypes = "true";
-            }
-            last;
-            }
-            }
-
-        return $have_phenotypes;
-
-        }
-"""
 
 if __name__ == "__main__":
     sf = cli()
