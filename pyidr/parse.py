@@ -198,7 +198,7 @@ class StudyFiles(object):
 
         # 4. now ommitted (was getting URLS)
 
-        return columnTitleToCombinOn, phenotype_ontologyArray
+        return columnTitleToCombineOn, phenotype_ontologyArray
 
 ######################################################################
 # C. process the library file
@@ -206,7 +206,7 @@ class StudyFiles(object):
 #    match up with the processed file
 ######################################################################
 
-    def process_library(self, columnTitleToCombineOn):
+    def process_library(self, columnTitleToCombineOn, unknown):
 
         # 5. which column in library file has identifier to match column in
         # processed file
@@ -221,7 +221,7 @@ class StudyFiles(object):
                 indexOfLibraryFileColumnForMatching = n
                 break
 
-        #print "index of library file column for matching is
+        # print "index of library file column for matching is
         # $indexOfLibraryFileColumnForMatching\n";
 
         # remove any new line characters
@@ -241,31 +241,31 @@ class StudyFiles(object):
 #    each row.  So work out how many blank columns to add.
 ######################################################################
 
-    # 6. which columns appear in both the library and processed files?
+        # 6. which columns appear in both the library and processed files?
 
-    columnsToLooseFromProcessedFile = []
-    numberOfColumnsUniqueToProcessedFile = 0
-    blankColumnsIfNoProcessedData = ""
+        columnsToLooseFromProcessedFile = []
+        numberOfColumnsUniqueToProcessedFile = 0
+        blankColumnsIfNoProcessedData = ""
 
-    processedHeaderRow = self.processed_lines[0].split("\t")
-    for index, col in enumerate(processedHeaderRow):
-        col = col.strip()
-        # print "Column is ;$processedHeaderRow[$index];\n";
-        # TODO: review regex
-        #       have to do quotemeta to match if the string has square brackets
-        #       e.g. Experimental Condition [genotype]
-        if col in libraryHeaderRow:
-            columnsToLooseFromProcessedFile.append(col)
+        processedHeaderRow = self.processed_lines[0].split("\t")
+        for index, col in enumerate(processedHeaderRow):
+            col = col.strip()
+            # print "Column is ;$processedHeaderRow[$index];\n";
+            # TODO: review regex
+            #       have to do quotemeta to match if the string has square brackets
+            #       e.g. Experimental Condition [genotype]
+            if col in libraryHeaderRow:
+                columnsToLooseFromProcessedFile.append(col)
 
-    numberOfColumnsUniqueToProcessedFile = len(processedHeaderRow) - \
-        len(columnsToLooseFromProcessedFile)
+        numberOfColumnsUniqueToProcessedFile = len(processedHeaderRow) - \
+            len(columnsToLooseFromProcessedFile)
 
-    # 7. make a string of blank columns equal to the number of columns
-    #    left in the processed data file after removing columns also in
-    #    the library file
+        # 7. make a string of blank columns equal to the number of columns
+        #    left in the processed data file after removing columns also in
+        #    the library file
 
-    for blanks in range(numberOfColumnsUniqueToProcessedFile-1):
-        blankColumnsIfNoProcessedData += ","
+        for blanks in range(numberOfColumnsUniqueToProcessedFile-1):
+            blankColumnsIfNoProcessedData += ","
 
 
 ######################################################################
