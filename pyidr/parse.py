@@ -117,7 +117,11 @@ Module documentation
 
 from re import match
 from argparse import ArgumentParser
-# TODO: move to using logging
+from logging import basicConfig
+from logging import WARN
+from logging import getLogger
+
+LOG = getLogger("idr.parse")
 
 
 def cli():
@@ -129,6 +133,8 @@ def cli():
         "Output :  The output file name is taken from the library file with "
         "the extension -annotation.txt rather than -library.txt"
     ))
+    parser.add_argument("-v", action="count", default=0,
+                        help="increase verbosity")
     parser.add_argument("studyFile")
     parser.add_argument("libraryFile")
     parser.add_argument("processedDataFile",
@@ -137,6 +143,8 @@ def cli():
                         help="(1,2,3 etc)")
     # TODO: likely this should just be a idr directory and screen number
     ns = parser.parse_args()
+    lvl = WARN - (ns.v * 10)
+    basicConfig(level=lvl, format='%(message)s')
     sf = StudyFiles(ns.studyFile, ns.libraryFile, ns.processedDataFile)
     sf.read_files()
     col, phenos = sf.process_screen(ns.screenNumber)
@@ -177,13 +185,13 @@ class StudyFiles(object):
         self._parseScreenSections(screenNumber)
         section = self.screen_sections[screenNumber-1]
         for row in section[0:5]:
-            print ">>>: %s" % row
+            LOG.debug(">>>: %s" % row)
         screenName = section[1].split("\t")[1]
-        print "Making bulk annotation file for screen %s" % screenName
+        LOG.info("Making bulk annotation file for screen %s" % screenName)
 
         # 2. find which column to combine on
         columnTitleToCombineOn = self._getColumnToCombineOn(section)
-        print "The column to combine on is %s" % columnTitleToCombineOn
+        LOG.info("The column to combine on is %s" % columnTitleToCombineOn)
 
         # 3. get the phenotypes and the ontology mappings
         # Create a hash of the submitter phenotypes and their ontology sources,
@@ -195,7 +203,7 @@ class StudyFiles(object):
 
         phenotype_ontologyArray = self._getPhenotypes(section)
         if not phenotype_ontologyArray:
-            print "WARNING: There are no phenotypes for this screen"
+            LOG.warn("WARNING: There are no phenotypes for this screen")
 
         # 4. now ommitted (was getting URLS)
 
@@ -223,8 +231,8 @@ class StudyFiles(object):
                 indexOfLibraryFileColumnForMatching = n
                 break
 
-        print "index of library file column for matching is ", \
-            indexOfLibraryFileColumnForMatching
+        LOG.info("index of library file column for matching is %s" %
+                 indexOfLibraryFileColumnForMatching)
 
         # remove any new line characters
         # TODO (perhaps already done)
@@ -252,7 +260,7 @@ class StudyFiles(object):
         processedHeaderRow = self.processed_lines[0].split("\t")
         for index, col in enumerate(processedHeaderRow):
             col = col.strip()
-            # print "Column is ;$processedHeaderRow[$index];\n";
+            LOG.debug("Column is %s" % processedHeaderRow[index])
             # TODO: review regex
             #       have to do quotemeta to match if the string has square
             #       brackets  e.g. Experimental Condition [genotype]
@@ -290,12 +298,12 @@ class StudyFiles(object):
             # on might have brackets in it
             # e.g. Experimental Condition [cell line]
             if column == columnTitleToCombineOn:  # TODO
-                #  print "column to match on is $column\n";
+                LOG.debug("column to match on is %s" % column)
                 indexOfProcessedFileColumnForMatching = p
             break
 
-            #  print "index for column to match on is
-            #  $indexOfProcessedFileColumnForMatching\n";
+            LOG.debug("index for column to match on is %s" %
+                      indexOfProcessedFileColumnForMatching)
 
         # 9. remove the columns from the processed file that are already in
         #    the library file as don't need them twice in the final file. To
@@ -315,7 +323,7 @@ class StudyFiles(object):
             # create the hash of with the column number and then column value
             columnNumber_columnValue = list()
             for columnValue in thisRow:
-                #  print "Column Number: $count Value: $columnValue\n";
+                LOG.debug("Column Value: %s" % columnValue)
                 columnNumber_columnValue.append(columnValue)  # TODO
 
             # then create new array with just the column values we want to keep
@@ -338,10 +346,10 @@ class StudyFiles(object):
 
         Identifier_otherColumnsWithOntology = dict(Identifier_otherColumns)
 
-        print "At start old header row is %s" % \
-            Identifier_otherColumns[columnTitleToCombineOn]
-        print "At start new header row is %s" % \
-            Identifier_otherColumnsWithOntology[columnTitleToCombineOn]
+        LOG.info("At start old header row is %s" %
+                 Identifier_otherColumns[columnTitleToCombineOn])
+        LOG.info("At start new header row is %s" %
+                 Identifier_otherColumnsWithOntology[columnTitleToCombineOn])
 
         # if there are any phenotypes then add the ontology to the new header
         # row otherwise it will just stay the same as it is
@@ -638,12 +646,12 @@ close (OUT);
 
                 # then see if we have another lot of ontology terms
                 if "Phenotype Term Source REF" in section[n+6]:
-                    # print "we have some second ontology terms\n";
+                    LOG.debug("we have some second ontology terms")
                     termSource2 = section[n+6].split("\t")
                     termNames2 = section[n+7].split("\t")
                     termAccs2 = section[n+8].split("\t")
 
-        # print "Getting the phenotypes from the library file: \n";
+        LOG.debug("Getting the phenotypes from the library file")
         # put it all into the hash of arrays
         # maxNumberOfOntTerms = 1 (unused)
         # use this to see if we have any phenotypes
@@ -654,19 +662,19 @@ close (OUT);
         for t in range(1, len(phenotypes)):
             # empty colection of items in one column
             mappingsArray = []
-            # print "phenotype found is ;$phenotypes[$t];\n";
+            LOG.debug("phenotype found is %s" % phenotypes[t])
             # only add values if they have a letter character i.e. not blank
             for arr in (termSource1, termNames1, termAccs1):
                 if arr[t].strip():
                     mappingsArray.append(arr[t])
 
             if termSource2:
-                # print "Looking at second mappings\n";
+                LOG.debug("Looking at second mappings")
                 for arr in (termSource2, termNames2, termAccs2):
                     if arr[t].strip():
                         mappingsArray.append(arr[t])
 
-            # print "array is going to be @mappingsArray \n";
+            LOG.debug("array is going to be %s" % mappingsArray)
             screenPhenotype_ontologyArray[phenotypes[t]] = mappingsArray
 
         return screenPhenotype_ontologyArray
