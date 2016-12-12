@@ -317,23 +317,15 @@ class StudyFiles(object):
         # get each row of the processed file
         for row in self.processed_lines:
             row = row.strip()
-            thisRow = row.split("\t")
-
-            # create the hash of with the column number and then column value
-            columnNumber_columnValue = list()
-            for columnValue in thisRow:
-                LOG.debug("Column Value: %s" % columnValue)
-                columnNumber_columnValue.append(columnValue)  # TODO
+            row = row.split("\t")
 
             # then create new array with just the column values we want to keep
             thisRowColumnValuesToKeep = []
-
-            for key in range(len(columnNumber_columnValue)):
+            for key, val in enumerate(row):
                 if key not in columnsToLooseFromProcessedFile:
-                    thisRowColumnValuesToKeep.append(
-                        columnNumber_columnValue[key])
+                    thisRowColumnValuesToKeep.append(val)
 
-            idx = thisRow[indexOfProcessedFileColumnForMatching]
+            idx = row[indexOfProcessedFileColumnForMatching]
             Identifier_otherColumns[idx] = thisRowColumnValuesToKeep
 
         # 10. For each phenotype in the processed file find out what the
