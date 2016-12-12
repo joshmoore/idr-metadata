@@ -252,8 +252,8 @@ class StudyFiles(object):
             col = col.strip()
             # print "Column is ;$processedHeaderRow[$index];\n";
             # TODO: review regex
-            #       have to do quotemeta to match if the string has square brackets
-            #       e.g. Experimental Condition [genotype]
+            #       have to do quotemeta to match if the string has square
+            #       brackets  e.g. Experimental Condition [genotype]
             if col in libraryHeaderRow:
                 columnsToLooseFromProcessedFile.append(col)
 
@@ -277,118 +277,107 @@ class StudyFiles(object):
 # 10. For each phenotype in the processed file find out what the
 #    associated ontology mappings are (if any)
 ######################################################################
+
+        # 8. which column in processed file has identifier to match column in
+        # library file
+
+        indexOfProcessedFileColumnForMatching = None
+
+        for p, column in enumerate(processedHeaderRow):
+            # have to quotemeta this as column to match
+            # on might have brackets in it
+            # e.g. Experimental Condition [cell line]
+            if column == columnTitleToCombineOn:  # TODO
+                #  print "column to match on is $column\n";
+                indexOfProcessedFileColumnForMatching = p
+            break
+
+            #  print "index for column to match on is
+            #  $indexOfProcessedFileColumnForMatching\n";
+
+        # 9. remove the columns from the processed file that are already in
+        #    the library file as don't need them twice in the final file. To
+        #    do this need to create a hash of the column numbers and the
+        #    values otherwise as soon as one column is removed all the other
+        #    column numbers in the array will change.
+        #    Then put the remaining row into a hash with the common
+        #    identifier as the key.
+
+        Identifier_otherColumns = dict()
+
+        # get each row of the processed file
+        for row in self.processed_lines:
+            row = row.strip()
+            thisRow = row.split("\t")
+
+            # create the hash of with the column number and then column value
+            columnNumber_columnValue = list()
+            for columnValue in thisRow:
+                #  print "Column Number: $count Value: $columnValue\n";
+                columnNumber_columnValue.append(columnValue)  # TODO
+
+            # then create new array with just the column values we want to keep
+            thisRowColumnValuesToKeep = []
+
+            for key in range(len(columnNumber_columnValue)):
+                if key not in columnsToLooseFromProcessedFile:
+                    thisRowColumnValuesToKeep.append(
+                        columnNumber_columnValue[key])
+
+            idx = thisRow[indexOfProcessedFileColumnForMatching]
+            Identifier_otherColumns[idx] = thisRowColumnValuesToKeep
+
+        # 10. For each phenotype in the processed file find out what the
+        #     associated ontology mappings are (if any)
+
+        # first clone the hash of arrays with the identifier and the columns so
+        # can move through all the columns in the original file without the
+        # column numbers jumping due to column insertions
+
+        Identifier_otherColumnsWithOntology = dict(Identifier_otherColumns)
+
+        print "At start old header row is %s" % \
+            Identifier_otherColumns[columnTitleToCombineOn]
+        print "At start new header row is %s" % \
+            Identifier_otherColumnsWithOntology[columnTitleToCombineOn]
+
+        # if there are any phenotypes then add the ontology to the new header
+        # row otherwise it will just stay the same as it is
+
     """
 
-# 8. which column in processed file has identifier to match column in
-# library file
+    # if there are any phenotypes mentioned in the study file for the screen
+    if  (%phenotype_ontologyArray){
 
-my $indexOfProcessedFileColumnForMatching;
+        # find which are the phenotype columns from the processed file
+        # when get a phenotype column, find out what its in it, then get mapping
+        # store which ontology with the phenotype to add link in header
+        # then add the header rows
+        # then go through and add the mappings
 
-my $p=0;
-foreach my $column (@processedHeaderRow){
-  if ($column =~ /^\Q$columnTitleToCombineOn\E$/){ # have to quotemeta this as column to match on might have brackets in it e.g. Experimental Condition [cell line]
- #   print "column to match on is $column\n";
-    $indexOfProcessedFileColumnForMatching = $p;
-    last;
-  }
-  $p++;
-}
+        my $b = 0;
+        my $numberOntologyColumnsAdded = 0;
 
-#print "index for column to match on is $indexOfProcessedFileColumnForMatching\n";
+        for my $a (0 .. $#{$Identifier_otherColumns{$columnTitleToCombineOn}}) { # going through column headings of original array
+            # Reminder: %Identifier_otherColumns has each identifier e.g. Plate_Well or Gene Identfier that is used to combined the
+            # library and processed data files as the key, and all the processed data columns that go with that identifier as the values
+            # So here we are going through the column headings row because the key is what ever the column title to combine on is
 
-# 9. remove the columns from the processed file that are already in
-#    the library file as don't need them twice in the final file. To
-#    do this need to create a hash of the column numbers and the
-#    values otherwise as soon as one column is removed all the other
-#    column numbers in the array will change.
-#    Then put the remaining row into a hash with the common
-#    identifier as the key.
+            if( ${$Identifier_otherColumns{$columnTitleToCombineOn}}[$a] =~ m/^Phenotype\s?\d*$/){  # when we get a phenotype column ...
 
+                my @mapping = ();
+                my $numberOfMappings = 0;
+                my @ontologiesUsed = ();
 
-  my %Identifier_otherColumns;
+                 # FIRST TIME ROUND - JUST FIND OUT FOR THIS PHENOTYPE IF THERE IS A MAPPING, AND IF SO IS IT ONE OR TWO TERMS
+                 # AND WHAT ONTOLOGIES ARE THEY FROM
 
+                foreach my $identifier (keys %Identifier_otherColumns){ # start going through all the rows in that phenotype column to find one with a value
 
-  # get each row of the processed file
-for (my $row=0; $row<@processedFile; $row++){
+                   if (($Identifier_otherColumns{$identifier}[$a] =~ m/\w+/) && ($identifier ne $columnTitleToCombineOn))  { # if the value matches a word character but is not the column heading
+                     # see if this phenotype has an ontology mapping
 
-     chomp ($processedFile[$row]);
-     my @thisRow = split("\t", $processedFile[$row], -1); # the -1 means that trailing empty cells are kept as part of @thisRow
-
-     # create the hash of with the column number and then column value
-     my %columnNumber_columnValue;
-     my $count=0;
-     foreach my $columnValue (@thisRow){
-     #   print "Column Number: $count Value: $columnValue\n";
-        $columnNumber_columnValue{$count} = $columnValue;
-        $count++;
-        }
-
-  #then create new array with just the column values we want to keep
-  my @thisRowColumnValuesToKeep;
-
-  my @keysInOrder = sort {$a <=> $b} keys %columnNumber_columnValue;
-
-  foreach my $key (@keysInOrder){
-    if (grep (/^$key$/, @columnsToLooseFromProcessedFile)){
-    # do nothing
-    }else{
-     push @thisRowColumnValuesToKeep, $columnNumber_columnValue{$key};
-    }
-
-  }
-
-  $Identifier_otherColumns{$thisRow[$indexOfProcessedFileColumnForMatching]} = \@thisRowColumnValuesToKeep;
-
-}
-
-
-# 10. For each phenotype in the processed file find out what the
-#    associated ontology mappings are (if any)
-
-# first clone the hash of arrays with the identifier and the columns so can
-# move through all the columns in the original file without the column numbers
-# jumping due to column insertions
-
- my %Identifier_otherColumnsWithOntology = %{ dclone(\%Identifier_otherColumns) };
-
-print "At start old header row is @{$Identifier_otherColumns{$columnTitleToCombineOn}}\n";
-print "At start new header row is @{$Identifier_otherColumnsWithOntology{$columnTitleToCombineOn}}\n";
-
-# if there are any phenotypes then add the ontology to the new header row otherwise it will just stay the same as
-# it is
-
-if  (%phenotype_ontologyArray){ # if there are any phenotypes mentioned in the study file for the screen
-
-# find which are the phenotype columns from the processed file
-# when get a phenotype column, find out what its in it, then get mapping
-# store which ontology with the phenotype to add link in header
-# then add the header rows
-# then go through and add the mappings
-
-my $b = 0;
-my $numberOntologyColumnsAdded = 0;
-
-for my $a (0 .. $#{$Identifier_otherColumns{$columnTitleToCombineOn}}) { # going through column headings of original array
-  # Reminder: %Identifier_otherColumns has each identifier e.g. Plate_Well or Gene Identfier that is used to combined the
-  # library and processed data files as the key, and all the processed data columns that go with that identifier as the values
-  # So here we are going through the column headings row because the key is what ever the column title to combine on is
-
-       if( ${$Identifier_otherColumns{$columnTitleToCombineOn}}[$a] =~ m/^Phenotype\s?\d*$/){  # when we get a phenotype column ...
-
-     my @mapping = ();
-         my $numberOfMappings = 0;
-     my @ontologiesUsed = ();
-
-     # FIRST TIME ROUND - JUST FIND OUT FOR THIS PHENOTYPE IF THERE IS A MAPPING, AND IF SO IS IT ONE OR TWO TERMS
-     # AND WHAT ONTOLOGIES ARE THEY FROM
-
-         foreach my $identifier (keys %Identifier_otherColumns){ # start going through all the rows in that phenotype column to find one with a value
-
-       if (($Identifier_otherColumns{$identifier}[$a] =~ m/\w+/) && ($identifier ne $columnTitleToCombineOn))  { # if the value matches a word character but is not the column heading
-         # see if this phenotype has an ontology mapping
-
-
-             if (grep (/\Q$Identifier_otherColumns{$identifier}[$a]\E/, keys %phenotype_ontologyArray)){ # check the phenotype exists in the study file. Have to use quotemeta in case there is a bracket or other character needing escaping in the phenotype value
+                    if (grep (/\Q$Identifier_otherColumns{$identifier}[$a]\E/, keys %phenotype_ontologyArray)){ # check the phenotype exists in the study file. Have to use quotemeta in case there is a bracket or other character needing escaping in the phenotype value
 
                  @mapping = @{$phenotype_ontologyArray{$Identifier_otherColumns{$identifier}[$a]}};      # this info comes from the study file
 
