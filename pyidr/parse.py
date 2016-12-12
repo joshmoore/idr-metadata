@@ -277,7 +277,6 @@ class StudyFiles(object):
         for blanks in range(numberOfColumnsUniqueToProcessedFile-1):
             blankColumnsIfNoProcessedData += ","
 
-
 ######################################################################
 # E. process the processed data file
 # 8. find out which column contains the identifier which is going to
@@ -364,7 +363,8 @@ class StudyFiles(object):
             # mappings
 
             # going through column headings of original array
-            for a in range(Identifier_otherColumns[columnTitleToCombineOn]):
+            sz = len(Identifier_otherColumns[columnTitleToCombineOn])
+            for a in range(sz):
                 # Reminder: %Identifier_otherColumns has each identifier e.g.
                 # Plate_Well or Gene Identfier that is used to combined the
                 # library and processed data files as the key, and all the
@@ -373,8 +373,7 @@ class StudyFiles(object):
                 # because the key is what ever the column title to combine on is
 
                 # when we get a phenotype column ...
-                val = Identifier_otherColumnsWithOntology[
-                    columnTitleToCombineOn][a]
+                val = Identifier_otherColumns[columnTitleToCombineOn][a]
                 if match("^Phenotype\s?\d*", val):
 
                     mapping = list()
@@ -388,9 +387,9 @@ class StudyFiles(object):
                         # start going through all the rows in that phenotype
                         # column to find one with a value
 
+                        LOG.error("identifier: %s" % identifier)
                         if (Identifier_otherColumns[identifier][a]
-                                and Identifier_otherColumns !=
-                                columnTitleToCombineOn):
+                                and identifier != columnTitleToCombineOn):
 
                             # if the value matches a word character but is not
                             # the column heading; see if this phenotype has an
@@ -405,7 +404,7 @@ class StudyFiles(object):
 
                                 # this info comes from the study file
                                 mapping = phenotype_ontologyArray[
-                                    Identifier_otherColumns[identifier[a]]]
+                                    Identifier_otherColumns[identifier][a]]
 
                                 if len(mapping) == 3:
                                     ontologiesUsed.append(mapping[0])
@@ -418,7 +417,7 @@ class StudyFiles(object):
                                 raise Exception((
                                     "ERROR: Phenotype '%s' does not exist in "
                                     "the study file") %
-                                    Identifier_otherColumns[identifier[a]]
+                                    Identifier_otherColumns[identifier][a]
                                 )
 
         # get the URIs associated with the ontologies used (REMOVED)
