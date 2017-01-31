@@ -347,6 +347,8 @@ class StudyFiles(object):
         # if there are any phenotypes mentioned in the study file for the screen
         if phenotype_ontologyArray:
 
+            LOG.debug("POA: %s" % phenotype_ontologyArray)
+
             # find which are the phenotype columns from the processed file
             # when get a phenotype column, find out what its in it, then get
             # mapping store which ontology with the phenotype to add link in
@@ -378,7 +380,6 @@ class StudyFiles(object):
                         # start going through all the rows in that phenotype
                         # column to find one with a value
 
-                        LOG.error("identifier: %s" % identifier)
                         if (Identifier_otherColumns[identifier][a]
                                 and identifier != columnTitleToCombineOn):
 
@@ -405,6 +406,10 @@ class StudyFiles(object):
                                     ontologiesUsed.append(mapping[3])
                                     break
                             else:
+                                LOG.info("identifier: %s" % identifier)
+                                LOG.info("a: %s" % a)
+                                LOG.info("otherColumns: %s" %
+                                         Identifier_otherColumns[identifier])
                                 raise Exception((
                                     "ERROR: Phenotype '%s' does not exist in "
                                     "the study file") %

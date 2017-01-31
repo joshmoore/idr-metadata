@@ -506,9 +506,9 @@ for my $a (0 .. $#{$Identifier_otherColumns{$columnTitleToCombineOn}}) { # going
 
 
 
-#print "At end old header row is @{$Identifier_otherColumns{$columnTitleToCombineOn}}\n";
-#print "At end new header row is @{$Identifier_otherColumnsWithOntology{$columnTitleToCombineOn}}\n";
-#print "Total number of columns added due to ontologies is $numberOntologyColumnsAdded\n";
+print "At end old header row is @{$Identifier_otherColumns{$columnTitleToCombineOn}}\n";
+print "At end new header row is @{$Identifier_otherColumnsWithOntology{$columnTitleToCombineOn}}\n";
+print "Total number of columns added due to ontologies is $numberOntologyColumnsAdded\n";
 
 # add on the number of columns added for ontologies to the list of columns to be added if there is no processed data
 
