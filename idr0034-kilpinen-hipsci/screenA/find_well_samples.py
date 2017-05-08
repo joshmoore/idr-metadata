@@ -8,7 +8,7 @@ from psycopg2 import connect
 
 pw = environ.get("PASSWORD", "secret")
 name = "idr0034-kilpinen-hipsci/screenA"
-df = read_csv("idr0034-screenA-wellsToExclude.txt", sep="\t", header=1)
+df = read_csv("idr0034-screenA-wellsToExclude.txt", sep="\t")
 conn = connect("dbname=idr user=omero password=%s host=192.168.21.5" % pw)
 cur = conn.cursor()
 
@@ -19,10 +19,10 @@ for idx, entry in df.iterrows():
     plate, col, row, well, num, comment = entry
     rows.append((plate, col, row, well, num, comment))
     if plate not in plates:
-	    cur.execute(("select p.id from plate p, screen s, screenplatelink spl "
+        cur.execute(("select p.id from plate p, screen s, screenplatelink spl "
                          "where p.id = spl.child and spl.parent = s.id "
                          "  and s.name = %s and p.name = %s"),
-			(name, plate))
+                    (name, plate))
             rv = cur.fetchall()
             if len(rv) != 1:
                 print >>stderr, "Skipping", plate, rv
